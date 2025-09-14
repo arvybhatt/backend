@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Backend.Data;
 using Backend.Models;
 using System;
@@ -13,17 +14,31 @@ namespace Backend.Controllers
     public class TodoController : ControllerBase
     {
         private readonly TodoDbContext _context;
+        private readonly ILogger<TodoController> _logger;
 
-        public TodoController(TodoDbContext context)
+        public TodoController(TodoDbContext context, ILogger<TodoController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: api/Todo
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Todo>>> GetTodos()
         {
-            return await _context.Todos.ToListAsync();
+            _logger?.LogInformation("GET api/todo called");
+
+            try
+            {
+                var todos = await _context.Todos.ToListAsync();
+                _logger?.LogInformation("Retrieved {Count} todo items", todos?.Count ?? 0);
+                return todos;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error retrieving todos from database");
+                return StatusCode(500, "An error occurred while fetching todos.");
+            }
         }
 
         // GET: api/Todo/5
